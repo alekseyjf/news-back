@@ -6,7 +6,6 @@ module.exports = function(router, database) {
   const routeOneNews = "/admin/:league/news/edit/:id";
 
   router.get("/get-all-news", (req, res) => {
-    console.log(1);
     cluster.collection("news").find()
     .toArray((error, data) => {
       if (error) {
@@ -34,7 +33,6 @@ module.exports = function(router, database) {
   router.put(routeOneNews, (req, res) => {
     const details = { '_id': new ObjectID(req.params.id) };
     const body = { $set: req.body };
-    console.log('mainNews');
 
     cluster.collection("news").updateOne({'mainNews': true}, {$set: {'mainNews': false}}, (error, data) => {
       if(error) throw error;
@@ -51,7 +49,6 @@ module.exports = function(router, database) {
   });
 
   router.delete(routeOneNews, (req, res) => {
-    console.log("router delete");
     cluster.collection("news").deleteOne({ '_id': new ObjectID(req.params.id) }, (error, data) => {
       if (error) {
         res.status(500).send({error: "500 ошибка"});
@@ -65,8 +62,11 @@ module.exports = function(router, database) {
 
   router.post('/admin/news/create', (req, res) => {
 
+    /*cluster.collection("news").updateOne({'mainNews': true}, {$set: {'mainNews': false}}, (error, data) => {
+      if(error) throw error;
+    });*/
+
     req.body.dateCreate = Date.now();
-    // console.log(req.body);
 
     cluster.collection("news").insertOne(req.body);
     res.status(200).json({ok: 1});
@@ -79,7 +79,6 @@ module.exports = function(router, database) {
         res.status(500).send({error: "500 ошибка"});
         throw error
       }
-
       res.status(200).json(data)
     })
   });
@@ -92,12 +91,34 @@ module.exports = function(router, database) {
         res.status(500).send({error: "500 ошибка"});
         throw error
       }
-      // console.log(data);
       res.status(200).send(data);
 
       return;
     });
 
+  });
+
+  router.post('/create-comment', (req, res) => {
+    const {comments, newsId, comment, name} = req.body
+    const details = { '_id': new ObjectID(newsId) };
+    comment.dateCreate = Date.now();
+    // comment.name = name;
+    // comment.logoUser = logoUser;
+    // comment.subComments = subComments;
+    comments.push(comment)
+
+    const body = { $set: {comments} };
+
+    cluster.collection("news").updateOne(details, body, (error, data) => {
+      if (error) {
+        res.status(500).send({error: "500 ошибка"});
+        throw error
+      } else {
+        res.status(200).send(comments);
+
+        return;
+      }
+    })
   });
 
   return router;
