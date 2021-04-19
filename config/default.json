@@ -1,0 +1,5 @@
+{
+  "port": 5000,
+  "mongoUrl": "mongodb+srv://Jet-Fire:developerSUPER1@learndb.cqot6.mongodb.net/app?retryWrites=true&w=majority",
+  "sectretKey": "Random_password_o-lo-lo"
+}

@@ -1,11 +1,16 @@
 const Model = require('./Model');
+const { check } = require('express-validator');
 
 module.exports = function(router, database) {
   const cluster = database.db("auth");
   const model = new Model(cluster);
   // model.setCluster(cluster);
 
-  router.post('/login', model.login);
+  router.post('/login', [
+    check('name', 'Имя пользователя не может быть пустым').notEmpty(),
+    check('email', 'Проверьте корректно ли вы ввели пароль').normalizeEmail().isEmail().notEmpty(),
+    check('password', 'Пароль должен быть больше 4-х символов и не больше 20-и').isLength({min: 4, max: 20})
+  ],model.login);
   router.post('/signin', model.signin);
   return router;
 };

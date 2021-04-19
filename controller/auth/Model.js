@@ -1,7 +1,16 @@
-// const path = require('path');
-// const fullPath = path.dirname(require.main.filename);
+const bcrypt = require('bcrypt');
+const saltRounds = 7;
+const { validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
+const config = require('../../config/default.json');
 
-// const BaseModel = require(fullPath + '\\core\\BaseModel.js');
+const generateAccessTokken = (id, roles = 'user') =>  {
+  const payload = {
+    id, roles
+  };
+
+  return jwt.sign(payload, config.sectretKey, {expiriesIn: '24h'})
+};
 
 class Auth {
   constructor(cluster) {
@@ -10,14 +19,24 @@ class Auth {
   }
 
   login = (req, res) => {
+    const error = validationResult(req);
+    console.log(error);
+    if(!error.isEmpty()) {
+      return res.status(400).json({message: 'произошла ошибка при регистрации', error});
+    }
+
     const {name, email, password} = req.body;
     if(name && email && password) {
       this.cluster.collection("users").findOne({'email': email}, (error, data) => {
         if(error) {
           res.status(400).json({error: "Что то пошло не так"});
+          return;
         }
         if(data === null) {
-          this.cluster.collection("users").insertOne({name, email, password});
+          const hashPassword = bcrypt.hashSync(password, saltRounds);
+
+          this.cluster.collection("users").insertOne({name, email, password: hashPassword});
+
           res.status(200).json({ok: 1});
         } else {
           res.status(400).json({error: "Такой пользователь существует"});
@@ -38,8 +57,19 @@ class Auth {
       if(error || data === null) {
         res.status(400).send({error: "Нет такого пользователя"});
       } else {
-        const {name, email} = data;
-        res.status(200).send({name, email});
+        const {name: userName, email: userEmail, password: userPass} = data;
+
+        const validPassword = bcrypt.compareSync(password, userPass);
+        console.log(validPassword);
+
+        if(!validPassword) {
+          res.status(400).send({error: "Пароль не валиден"});
+          return;
+        }
+
+        const tokken = generateAccessTokken(data.id);
+
+        res.status(200).send({name: userName, email: userEmail});
       }
     });
 

@@ -2,7 +2,7 @@
 /node_modules
 .idea/
 
-/config
+# /config
 
 # local env files
 .env.local
