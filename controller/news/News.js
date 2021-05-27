@@ -1,4 +1,5 @@
 const ObjectID = require('mongodb').ObjectID;
+const authMiddleware = require('../../middleware/auth');
 
 module.exports = function(router, database) {
   const cluster = database.db("league");
@@ -99,25 +100,33 @@ module.exports = function(router, database) {
 
   });
 
-  router.post('/create-comment', (req, res) => {
-    const {comments, newsId, comment, name} = req.body
-    const details = { '_id': new ObjectID(newsId) };
-    comment.dateCreate = Date.now();
-    // comment.name = name;
-    // comment.logoUser = logoUser;
-    // comment.subComments = subComments;
-    comments.push(comment)
+  router.post('/create-comment', [authMiddleware],(req, res) => {
+    try {
+      const {comments, newsId, comment, name} = req.body;
+      const details = { '_id': new ObjectID(newsId) };
+      comment.dateCreate = Date.now();
+      // comment.name = name;
+      // comment.logoUser = logoUser;
+      // comment.subComments = subComments;
+      comments.push(comment);
+      console.log(22222);
+      const body = { $set: {comments} };
 
-    const body = { $set: {comments} };
+      cluster.collection("news").updateOne(details, body, (error, data) => {
+        console.log(333);
+        if (error) {
+          console.log(444);
+          res.status(500).send({error: "500 ошибка"});
+        } else {
+          console.log(555);
+          res.status(200).send(comments);
+        }
 
-    cluster.collection("news").updateOne(details, body, (error, data) => {
-      if (error) {
-        res.status(500).send({error: "500 ошибка"});
-      } else {
-        res.status(200).send(comments);
-      }
+        return;
+      });
+    } catch (e) {
+      console.log('что то пошло не так в /create-comment', e);
+    }
 
-      return;
-    })
   });
 };

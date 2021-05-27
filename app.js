@@ -10,14 +10,12 @@ const routerModule = require("./controller/routes");
 const cors = require('./middleware/cors');
 
 const PORT = config.get("port");
-
+app.use(cors);
 // parse application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: false }));
 
 // parse application/json
 app.use(express.json());
-
-app.use(cors);
 
 
 async function start() {
